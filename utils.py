@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from torch.autograd import Variable
 from scipy import sparse
 import os.path
 import time
@@ -12,13 +11,6 @@ from ase import Atoms, Atom
 #import deepchem as dc
 
 N_atom_features = 28
-
-def create_var(tensor, requires_grad=None): 
-    if requires_grad is None: 
-        #return Variable(tensor)
-        return Variable(tensor).cuda()
-    else: 
-        return Variable(tensor,requires_grad=requires_grad).cuda()
 
 
 def set_cuda_visible_device(ngpus):

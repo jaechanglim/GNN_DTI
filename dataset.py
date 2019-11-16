@@ -4,16 +4,10 @@ import utils
 import numpy as np
 import torch
 import random
-from rdkit.Chem.rdmolops import GetAdjacencyMatrix
 from rdkit import Chem
-from ase.io import read
 from scipy.spatial import distance_matrix
 from rdkit.Chem.rdmolops import GetAdjacencyMatrix
-import random
 import pickle
-from ase import Atoms, Atom
-from rdkit.Chem.rdmolops import CombineMols
-from rdkit.Chem.rdmolops import SplitMolByPDBResidues
 random.seed(0)
 
 def get_atom_feature(m, is_ligand=True):
@@ -33,9 +27,6 @@ class MolDataset(Dataset):
     def __init__(self, keys, data_dir):
         self.keys = keys
         self.data_dir = data_dir
-        self.amino_acids = ['ALA','ARG','ASN','ASP','ASX','CYS','GLU','GLN','GLX',\
-                   'GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER',\
-                   'THR','TRP','TYR','VAL']
 
     def __len__(self):
         return len(self.keys)
