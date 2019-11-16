@@ -5,6 +5,8 @@ from scipy import sparse
 import os.path
 import time
 import torch.nn as nn
+from ase import Atoms, Atom
+
 #from rdkit.Contrib.SA_Score.sascorer import calculateScore
 #from rdkit.Contrib.SA_Score.sascorer
 #import deepchem as dc
@@ -18,52 +20,6 @@ def create_var(tensor, requires_grad=None):
     else: 
         return Variable(tensor,requires_grad=requires_grad).cuda()
 
-def ensure_shared_grads(model, shared_model, gpu=False):
-    for param, shared_param in zip(model.parameters(), shared_model.parameters()):
-        if shared_param.grad is not None and not gpu:
-            return
-        elif not gpu:
-            shared_param._grad = param.grad
-        else:
-            if param.grad is None:
-                continue
-            shared_param._grad = param.grad.cpu()
-
-def preprocessor(data, device):
-
-    #each data of protein-ligand complex has different size.
-    #unite the size of tensor as the largest number of atoms by padding zero elements
-    
-    max_natoms = np.amax(np.array([len(d[0]) for d in data]))
-    c_hs = np.zeros((len(data), max_natoms, N_atom_features*2), np.uint8)
-    c_adjs1 = np.zeros((len(data),  max_natoms, max_natoms), np.uint8)
-    c_adjs2 = np.zeros((len(data),  max_natoms, max_natoms))
-    c_valid = np.zeros((len(data),  max_natoms), np.uint8)
-    
-    for idx, (hs, adj, distance_matrix, n_ligand_atoms) in enumerate(data):
-        #hs : initial node state
-        #adj : adjacency matrix, note that only ligand-ligand, protein-protein is filled
-        #distance_miatrix :  distance matrix, note that only ligand-protein is filled
-        #n_ligand_atoms : number of ligand atoms
-        adj = np.copy(adj.todense())
-        distance_matrix = np.copy(distance_matrix.todense())
-        adj += np.eye(len(adj)).astype(np.uint8)
-        c_hs[idx, :n_ligand_atoms,:N_atom_features] = hs[:n_ligand_atoms]
-        c_hs[idx, n_ligand_atoms:len(adj),N_atom_features:] = hs[n_ligand_atoms:]
-
-        adj1 = np.copy(adj)
-        adj1[:n_ligand_atoms,n_ligand_atoms:] = 0
-        c_adjs1[idx, :len(adj), :len(adj)] = adj1
-        c_adjs2[idx, :len(adj), :len(adj)] = np.copy(distance_matrix)
-        c_valid[idx,:n_ligand_atoms] = 1
-    
-    c_adjs2[c_adjs2<0.00001] = 1e10
-    c_hs = create_var(torch.from_numpy(np.array(c_hs))).to(device).float()
-    c_adjs1 = create_var(torch.from_numpy(np.array(c_adjs1))).to(device).float()
-    c_adjs2 = create_var(torch.from_numpy(np.array(c_adjs2))).to(device).float()
-    c_valid = create_var(torch.from_numpy(np.array(c_valid))).to(device).float()
-    
-    return c_hs, c_adjs1, c_adjs2, c_valid
 
 def set_cuda_visible_device(ngpus):
     import subprocess
@@ -83,20 +39,6 @@ def set_cuda_visible_device(ngpus):
         cmd+=str(empty[i])+','
     return cmd
 
-def cal_auc(true, pred):    
-    from sklearn.metrics import roc_auc_score
-    true = np.array([[1,0] if true[i]==0 else [0,1] for i in range(len(true))])
-    return roc_auc_score(true, pred)
-
-def cal_R2(true, pred):
-    from sklearn.metrics import r2_score
-    import scipy
-    r2_1 = r2_score(true, pred)
-    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(true, pred)
-    r2_2 = r_value*r_value
-
-    return r2_1, r2_2
-    
 def initialize_model(model, device, load_save_file=False):
     if load_save_file:
         model.load_state_dict(torch.load(load_save_file)) 
@@ -115,3 +57,27 @@ def initialize_model(model, device, load_save_file=False):
       model = nn.DataParallel(model)
     model.to(device)
     return model
+
+def one_of_k_encoding(x, allowable_set):
+    if x not in allowable_set:
+        raise Exception("input {0} not in allowable set{1}:".format(x, allowable_set))
+    #print list((map(lambda s: x == s, allowable_set)))
+    return list(map(lambda s: x == s, allowable_set))
+
+def one_of_k_encoding_unk(x, allowable_set):
+    """Maps inputs not in the allowable set to the last element."""
+    if x not in allowable_set:
+        x = allowable_set[-1]
+    return list(map(lambda s: x == s, allowable_set))
+
+def atom_feature(m, atom_i, i_donor, i_acceptor):
+
+    atom = m.GetAtomWithIdx(atom_i)
+    return np.array(one_of_k_encoding_unk(atom.GetSymbol(),
+                                      ['C', 'N', 'O', 'S', 'F', 'P', 'Cl', 'Br', 'B', 'H']) +
+                    one_of_k_encoding(atom.GetDegree(), [0, 1, 2, 3, 4, 5]) +
+                    one_of_k_encoding_unk(atom.GetTotalNumHs(), [0, 1, 2, 3, 4]) +
+                    one_of_k_encoding_unk(atom.GetImplicitValence(), [0, 1, 2, 3, 4, 5]) +
+                    [atom.GetIsAromatic()])    # (10, 6, 5, 6, 1) --> total 28
+
+    
