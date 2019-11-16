@@ -1,4 +1,8 @@
 ![Screenshot](figure.png)
+![Screenshot](result1.png)
+![Screenshot](resutl2.png)
+
+https://pubs.acs.org/doi/10.1021/acs.jcim.9b00387
 
 ## Training command example
 
