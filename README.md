@@ -1,8 +1,8 @@
 ![Screenshot](figure.png)
 
-![Screenshot](result1.png)
+## Main Results
+![Screenshot](result.png)
 
-![Screenshot](result2.png)
 
 https://pubs.acs.org/doi/10.1021/acs.jcim.9b00387
 
