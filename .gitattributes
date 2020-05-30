@@ -1,2 +1,9 @@
-data.tar filter=lfs diff=lfs merge=lfs -text
-data filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partah filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partaa filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partac filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partae filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partaf filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partag filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partab filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partad filter=lfs diff=lfs merge=lfs -text
+data/data.tar.partai filter=lfs diff=lfs merge=lfs -text
